@@ -81,4 +81,12 @@ function parse(str) {
     return json;
 }
 exports.parse = parse;
+function json2bson(doc) {
+    return bson_1.EJSON.deserialize(doc);
+}
+exports.json2bson = json2bson;
+function bson2json(doc) {
+    return bson_1.EJSON.serialize(doc);
+}
+exports.bson2json = bson2json;
 //# sourceMappingURL=main.js.map

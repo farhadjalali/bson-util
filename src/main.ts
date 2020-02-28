@@ -1,4 +1,4 @@
-import {ObjectId} from 'bson';
+import {ObjectId, EJSON} from 'bson';
 
 export function stringify(value): string {
 	value._0 = "";
@@ -85,4 +85,12 @@ export function parse(str: string): any {
 	replaceRef(json);
 
 	return json;
+}
+
+export function json2bson(doc: any): any {
+	return EJSON.deserialize(doc);
+}
+
+export function bson2json(doc: any): any {
+	return EJSON.serialize(doc);
 }
