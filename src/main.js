@@ -11,8 +11,12 @@ function stringify(value) {
                     return { _$: value._0 };
                 }
                 for (let attr in value) {
-                    if (value[attr] && value[attr].constructor == bson_1.ObjectId) {
-                        value[attr] = { "$oid": value[attr].toString() };
+                    let val = value[attr];
+                    if (val) {
+                        if (val.constructor == bson_1.ObjectId)
+                            value[attr] = { "$oid": val.toString() };
+                        if (val instanceof Date)
+                            value[attr] = { "$date": val.toString() };
                     }
                 }
                 seen.add(value);
@@ -43,7 +47,7 @@ function stringify(value) {
 }
 exports.stringify = stringify;
 function parse(str) {
-    let json = JSON.parse(str);
+    let json = typeof str == "string" ? JSON.parse(str) : str;
     let keys = {};
     const findKeys = (obj) => {
         if (obj && obj._0) {
@@ -64,7 +68,15 @@ function parse(str) {
             let val = obj[key];
             if (!val)
                 continue;
-            if (typeof val === "object" && !val.$oid) {
+            if (typeof val === "object") {
+                if (val.$oid) {
+                    obj[key] = new bson_1.ObjectId(val.$oid);
+                    continue;
+                }
+                if (val.$date) {
+                    obj[key] = new Date(val.$date);
+                    continue;
+                }
                 if (val._$ == "") {
                     obj[key] = json;
                 }

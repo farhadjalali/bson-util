@@ -12,8 +12,13 @@ export function stringify(value): string {
 				}
 
 				for (let attr in value) {
-					if (value[attr] && value[attr].constructor == ObjectId) {
-						value[attr] = {"$oid": value[attr].toString()};
+					let val = value[attr];
+					if (val) {
+						if (val.constructor == ObjectId)
+							value[attr] = {"$oid": val.toString()};
+
+						if (val instanceof Date)
+							value[attr] = {"$date": val.toString()};
 					}
 				}
 				seen.add(value);
@@ -45,7 +50,7 @@ export function stringify(value): string {
 }
 
 export function parse(str: string): any {
-	let json = JSON.parse(str);
+	let json = typeof str == "string" ? JSON.parse(str) : str;
 	let keys = {};
 	const findKeys = (obj) => {
 		if (obj && obj._0) {
@@ -67,11 +72,18 @@ export function parse(str: string): any {
 		for (let key in obj) {
 			let val = obj[key];
 			if (!val) continue;
-			if (typeof val === "object" && !val.$oid) {
+			if (typeof val === "object") {
+				if (val.$oid) {
+					obj[key] = new ObjectId(val.$oid);
+					continue;
+				}
+				if (val.$date) {
+					obj[key] = new Date(val.$date);
+					continue;
+				}
 				if (val._$ == "") {
 					obj[key] = json;
-				}
-				else if (val._$) {
+				} else if (val._$) {
 					obj[key] = eval('json' + val._$);
 				}
 

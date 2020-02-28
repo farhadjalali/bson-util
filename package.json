@@ -1,6 +1,6 @@
 {
   "name": "bson-util",
-  "version": "0.1.4",
+  "version": "0.1.6",
   "description": "Utilities for bson documents",
   "main": "index.js",
   "types": "index.d.ts",
