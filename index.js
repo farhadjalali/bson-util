@@ -4,13 +4,13 @@ exports.json2bson = exports.parse = exports.stringify = exports.ID = void 0;
 class ID {
     constructor(id) {
         this._bsontype = 'ObjectID';
-        this.id = Buffer.from(id, "hex");
+        this.id = new Uint8Array(id.match(/[\da-f]{2}/gi).map(h => parseInt(h, 16)));
     }
     equals(another) {
-        return this.id.toString("hex") == another.id.toString("hex");
+        return this.toString() == another.toString();
     }
     toString() {
-        return this.id.toString("hex");
+        return Array.from(this.id).map(i => ('0' + i.toString(16)).slice(-2)).join('');
     }
 }
 exports.ID = ID;
@@ -20,48 +20,46 @@ function bson2json(bson, json, seen) {
     else
         seen.set(bson, json);
     for (const key in bson) {
-        try {
-            let val = bson[key];
-            if (val == null || typeof val == "number" || typeof val == "string" || typeof val == "boolean")
-                json[key] = val;
-            else {
-                switch (val.constructor.name.toLowerCase()) {
-                    case "id":
-                    case "objectid":
-                        json[key] = { "$oid": val.toString() };
-                        break;
-                    case "date":
-                        json[key] = { "$Date": val.toISOString() };
-                        break;
-                    case "regexp":
-                        json[key] = { "$RegExp": val.toString() };
-                        break;
-                    default:
-                        if (Array.isArray(val)) {
-                            json[key] = [];
-                            for (const item of val) {
-                                if (item == null || typeof item == "number" || typeof item == "string" || typeof item == "boolean")
-                                    json[key].push(item);
-                                else {
-                                    let newJson = {};
-                                    bson2json(item, newJson, seen);
-                                    json[key].push(newJson);
-                                }
+        let val = bson[key];
+        if (val == null || typeof val == "number" || typeof val == "string" || typeof val == "boolean")
+            json[key] = val;
+        else {
+            if (val.constructor == null) {
+                return;
+            }
+            switch (val.constructor.name.toLowerCase()) {
+                case "id":
+                case "objectid":
+                    json[key] = { "$oid": val.toString() };
+                    break;
+                case "date":
+                    json[key] = { "$Date": val.toISOString() };
+                    break;
+                case "regexp":
+                    json[key] = { "$RegExp": val.toString() };
+                    break;
+                default:
+                    if (Array.isArray(val)) {
+                        json[key] = [];
+                        for (const item of val) {
+                            if (item == null || typeof item == "number" || typeof item == "string" || typeof item == "boolean")
+                                json[key].push(item);
+                            else {
+                                let newJson = {};
+                                bson2json(item, newJson, seen);
+                                json[key].push(newJson);
                             }
                         }
-                        else if (seen.has(val)) {
-                            json[key] = seen.get(val);
-                        }
-                        else {
-                            json[key] = {};
-                            bson2json(val, json[key], seen);
-                        }
-                        break;
-                }
+                    }
+                    else if (seen.has(val)) {
+                        json[key] = seen.get(val);
+                    }
+                    else {
+                        json[key] = {};
+                        bson2json(val, json[key], seen);
+                    }
+                    break;
             }
-        }
-        catch (e) {
-            throw e;
         }
     }
 }
@@ -90,6 +88,9 @@ exports.stringify = stringify;
 function parse(text, bson = false) {
     if (!text)
         return null;
+    if (typeof text != "string") {
+        return text;
+    }
     if (!bson)
         return parseCircular(text);
     else {
@@ -188,6 +189,9 @@ function stringifyCircular(data, space) {
     }
 }
 function parseCircular(data) {
+    if (typeof data != "string") {
+        return data;
+    }
     let hasCircular = /^\s/.test(data);
     if (!hasCircular) {
         return JSON.parse(data);

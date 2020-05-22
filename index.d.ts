@@ -1,9 +1,8 @@
-/// <reference types="node" />
 export declare class ID {
     constructor(id: string);
     equals(another: ID): boolean;
     toString(): string;
-    id: Buffer;
+    id: Uint8Array;
     _bsontype: string;
 }
 export declare function stringify(json: any, bson?: boolean): string;

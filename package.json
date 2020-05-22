@@ -1,6 +1,6 @@
 {
   "name": "bson-util",
-  "version": "1.0.6",
+  "version": "1.0.8",
   "description": "Utilities for bson documents",
   "main": "index.js",
   "types": "index.d.ts",
@@ -29,8 +29,6 @@
   "homepage": "https://github.com/mina-its/bson-util#readme",
   "devDependencies": {
     "@types/jest": "^25.1.1",
-    "@types/node": "^13.13.9",
-    "typescript": "^3.9.3",
     "jest": "^25.1.0"
   },
   "author": "minaits",
