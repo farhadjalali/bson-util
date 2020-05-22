@@ -31,11 +31,10 @@ const {parse, stringify} = require('bson-util');
 You can find more samples in **main.test.ts**.
 
 ``` javascript
-var A: any = {b: new ObjectID(), c: 1};
+let A: any = {b: new ObjectID(), c: 1};
 A.a = A;
 
-stringify(A); // {"b":{"$oid":"5e32849068f40e424a80fe42"},"c":1,"a":{"_$":""},"_0":""}
+let newA = parse(stringify(A));
+// newA == A
 
-parse('{"b":{"$oid":"5e32849068f40e424a80fe42"},"c":1,"a":{"_$":""},"_0":""}'); 
-  // {b: ObjectID("5e32849068f40e424a80fe42"), c: 1, a: {b: ObjectID...}}
 ```
