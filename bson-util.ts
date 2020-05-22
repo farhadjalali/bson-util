@@ -15,75 +15,11 @@ export class ID {
 	_bsontype = 'ObjectID';
 }
 
-export function stringify2(value): string {
-	value._0 = "";
+function bson2json(bson: any, json: any, seen): void {
+	if (seen.has(bson)) return;
+	else
+		seen.set(bson, json);
 
-	const getCircularReplacer = () => {
-		const seen = new WeakSet();
-		return (key, value) => {
-			if (typeof value === "object" && value !== null) {
-				if (seen.has(value)) {
-					return {_$: value._0};
-				}
-
-				for (const attr in value) {
-					let val = value[attr];
-					if (val) {
-						if (val.constructor.toString() == "ObjectId")
-							value[attr] = {"$oid": val.toString()};
-
-						else if (val.constructor == RegExp)
-							value[attr] = {"$reg": val.toString()};
-
-						else if (val instanceof Date)
-							value[attr] = {"$date": val.toString()};
-					}
-				}
-				seen.add(value);
-			}
-			return value;
-		};
-	};
-
-	const seen = new WeakSet();
-	const setKeys = (obj, parentKey) => {
-		if (seen.has(obj)) return;
-		seen.add(obj);
-
-		for (const key in obj) {
-			let val = obj[key];
-			if (!val) continue;
-			if (typeof val === "object" && val.constructor.toString() == "ObjectId") {
-				if (val._0 == null) {
-					val._0 = parentKey + (Array.isArray(obj) ? `[${key}]` : `['${key}']`);
-				}
-				setKeys(val, val._0);
-			}
-		}
-	};
-
-	setKeys(value, "");
-	let str = JSON.stringify(value, getCircularReplacer());
-	return str;
-}
-
-export enum StringifyMode {
-	Normal = 0,
-	Bson = 1,
-}
-
-function bson2json(bson: any): any {
-	if (bson == null) return bson;
-
-	if (Array.isArray(bson)) {
-		let json = [];
-		for (const item of bson) {
-			json.push(bson2json(item));
-		}
-		return json;
-	}
-
-	let json = {};
 	for (const key in bson) {
 		let val = bson[key];
 		if (val == null)
@@ -106,7 +42,20 @@ function bson2json(bson: any): any {
 					break;
 
 				default:
-					json[key] = bson2json(val);
+					if (Array.isArray(val)) {
+						json[key] = [];
+						for (const item of val) {
+							let newJson = {};
+							bson2json(item, newJson, seen);
+							json[key].push(newJson);
+						}
+					} else if (seen.has(val)) {
+						json[key] = seen.get(val);
+					} else {
+						json[key] = {};
+						// seen.set(val, json[key]);
+						bson2json(val, json[key], seen);
+					}
 					break;
 			}
 		}
@@ -114,33 +63,46 @@ function bson2json(bson: any): any {
 	return json;
 }
 
-export function stringify(json: any, mode: StringifyMode = StringifyMode.Normal): string {
+export function stringify(json: any, bson: boolean = false): string {
 	if (json == null) return null;
 
-	switch (mode) {
-		case StringifyMode.Normal:
-			return JSON.stringify(json);
+	if (!bson)
+		return stringifyCircular(json);
+	else {
+		let seen = new WeakMap();
 
-		case StringifyMode.Bson:
-			let _json = bson2json(json);
-			return JSON.stringify(_json);
+		if (Array.isArray(bson)) {
+			let array = [];
+			for (const item of bson) {
+				let newJson = {};
+				bson2json(item, newJson, seen);
+				array.push(newJson);
+			}
+			return stringifyCircular(array);
+		}
+
+		let newJson = {};
+		bson2json(json, newJson, seen);
+		return stringifyCircular(newJson);
 	}
 }
 
-export function parse(text: string, mode: StringifyMode = StringifyMode.Normal): any {
+export function parse(text: string, bson: boolean = false): any {
 	if (!text) return null;
 
-	switch (mode) {
-		case StringifyMode.Normal:
-			return JSON.parse(text);
-
-		case StringifyMode.Bson:
-			let json = JSON.parse(text);
-			return json2bson(json);
+	if (!bson)
+		return parseCircular(text);
+	else {
+		let json = parseCircular(text);
+		let seen = new WeakSet();
+		return json2bson(json, seen);
 	}
 }
 
-export function json2bson(json): any {
+export function json2bson(json, seen): any {
+	if (seen.has(json)) return json;
+	seen.add(json);
+
 	for (const key in json) {
 		let val = json[key];
 		if (val == null) continue;
@@ -153,58 +115,91 @@ export function json2bson(json): any {
 				let match = val.$RegExp.match(/\/(.+)\/(.*)/);
 				json[key] = new RegExp(match[1], match[2]);
 			} else
-				json[key] = json2bson(val);
+				json[key] = json2bson(val, seen);
 		}
 	}
 	return json;
 }
 
-export function parse2(str: string): any {
-	let json = typeof str == "string" ? JSON.parse(str) : str;
-	let keys = {};
-	const findKeys = (obj) => {
-		if (obj && obj._0) {
-			keys[obj._0] = obj;
-			delete obj._0;
+function encode(data, replacer, list, seen) {
+	let stored, key, value, i, l;
+	let seenIndex = seen.get(data);
+	if (seenIndex != null) return seenIndex;
+	let index = list.length;
+	let proto = Object.prototype.toString.call(data);
+	if (proto === '[object Object]') {
+		stored = {};
+		seen.set(data, index);
+		list.push(stored);
+		let keys = Object.keys(data);
+		for (i = 0, l = keys.length; i < l; i++) {
+			key = keys[i];
+			value = data[key];
+			if (replacer) value = replacer.call(data, key, value);
+			stored[key] = encode(value, replacer, list, seen);
 		}
-
-		for (let key in obj) {
-			if (typeof obj[key] === "object")
-				findKeys(obj[key]);
+	} else if (proto === '[object Array]') {
+		stored = [];
+		seen.set(data, index);
+		list.push(stored);
+		for (i = 0, l = data.length; i < l; i++) {
+			value = data[i];
+			if (replacer) value = replacer.call(data, i, value);
+			stored[i] = encode(value, replacer, list, seen);
 		}
-	};
+	} else {
+		list.push(data);
+	}
+	return index
+}
 
-	const seen = new WeakSet();
-	const replaceRef = (obj) => {
-		if (seen.has(obj)) return;
-		seen.add(obj);
-
-		for (let key in obj) {
-			let val = obj[key];
-			if (!val) continue;
-			if (typeof val === "object") {
-				if (val.$oid) {
-					obj[key] = new ID(val.$oid);
-					continue;
-				}
-				if (val.$date) {
-					obj[key] = new Date(val.$date);
-					continue;
-				}
-				if (val._$ == "") {
-					obj[key] = json;
-				} else if (val._$) {
-					obj[key] = eval('json' + val._$);
-				}
-
-				replaceRef(val);
+function decode(list, reviver) {
+	let i = list.length;
+	let j, k, data, key, value, proto;
+	while (i--) {
+		data = list[i];
+		proto = Object.prototype.toString.call(data);
+		if (proto === '[object Object]') {
+			let keys = Object.keys(data);
+			for (j = 0, k = keys.length; j < k; j++) {
+				key = keys[j];
+				value = list[data[key]];
+				if (reviver) value = reviver.call(data, key, value);
+				data[key] = value
+			}
+		} else if (proto === '[object Array]') {
+			for (j = 0, k = data.length; j < k; j++) {
+				value = list[data[j]];
+				if (reviver) value = reviver.call(data, j, value);
+				data[j] = value
 			}
 		}
-	};
+	}
+}
 
-	delete json._0;
-	findKeys(json);
-	replaceRef(json);
+function stringifyCircular(data, replacer?, space?) {
+	try {
+		return arguments.length === 1
+			? JSON.stringify(data)
+			: JSON.stringify(data, replacer, space)
+	} catch (e) {
+		let list = [];
+		encode(data, replacer, list, new Map());
+		return space
+			? ' ' + JSON.stringify(list, null, space)
+			: ' ' + JSON.stringify(list);
+	}
+}
 
-	return json;
+function parseCircular(data, reviver?) {
+	let hasCircular = /^\s/.test(data);
+	if (!hasCircular) {
+		return arguments.length === 1
+			? JSON.parse(data)
+			: JSON.parse(data, reviver)
+	} else {
+		let list = JSON.parse(data);
+		decode(list, reviver);
+		return list[0]
+	}
 }
