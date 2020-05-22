@@ -17,6 +17,8 @@ describe("simple", () => {
 	};
 	let text = `{"name":"Canada","enable":true,"no":null,"age":10.5}`;
 
+	expect(parse(json as any)).toBe(json);
+
 	test("stringify null", () => {
 		let _text = stringify(null);
 		expect(_text).toBeNull();
@@ -197,5 +199,35 @@ describe("bson array circular bson", () => {
 	test("parse", () => {
 		let _json = parse(text, true);
 		expect(_json).toEqual(array);
+	});
+});
+
+describe("array of bson", () => {
+	let json = [new ID(sampleObjectID), new ID(sampleObjectID)];
+	let text = `[{"$oid":"${sampleObjectID}"},{"$oid":"${sampleObjectID}"}]`;
+
+	test("stringify", () => {
+		let _text = stringify(json, true);
+		expect(_text).toBe(text);
+	});
+
+	test("parse", () => {
+		let _json = parse(text, true);
+		expect(_json).toEqual(json);
+	});
+});
+
+describe("inner array of bson", () => {
+	let json = {"ids": [new ID(sampleObjectID), new ID(sampleObjectID)]};
+	let text = `{"ids":[{"$oid":"${sampleObjectID}"},{"$oid":"${sampleObjectID}"}]}`;
+
+	test("stringify", () => {
+		let _text = stringify(json, true);
+		expect(_text).toBe(text);
+	});
+
+	test("parse", () => {
+		let _json = parse(text, true);
+		expect(_json).toEqual(json);
 	});
 });

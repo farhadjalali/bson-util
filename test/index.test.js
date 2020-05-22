@@ -15,6 +15,7 @@ describe("simple", () => {
         age: 10.5
     };
     let text = `{"name":"Canada","enable":true,"no":null,"age":10.5}`;
+    expect(index_1.parse(json)).toBe(json);
     test("stringify null", () => {
         let _text = index_1.stringify(null);
         expect(_text).toBeNull();
@@ -167,6 +168,30 @@ describe("bson array circular bson", () => {
     test("parse", () => {
         let _json = index_1.parse(text, true);
         expect(_json).toEqual(array);
+    });
+});
+describe("array of bson", () => {
+    let json = [new index_1.ID(sampleObjectID), new index_1.ID(sampleObjectID)];
+    let text = `[{"$oid":"${sampleObjectID}"},{"$oid":"${sampleObjectID}"}]`;
+    test("stringify", () => {
+        let _text = index_1.stringify(json, true);
+        expect(_text).toBe(text);
+    });
+    test("parse", () => {
+        let _json = index_1.parse(text, true);
+        expect(_json).toEqual(json);
+    });
+});
+describe("inner array of bson", () => {
+    let json = { "ids": [new index_1.ID(sampleObjectID), new index_1.ID(sampleObjectID)] };
+    let text = `{"ids":[{"$oid":"${sampleObjectID}"},{"$oid":"${sampleObjectID}"}]}`;
+    test("stringify", () => {
+        let _text = index_1.stringify(json, true);
+        expect(_text).toBe(text);
+    });
+    test("parse", () => {
+        let _json = index_1.parse(text, true);
+        expect(_json).toEqual(json);
     });
 });
 //# sourceMappingURL=index.test.js.map

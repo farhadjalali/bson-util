@@ -15,54 +15,40 @@ export class ID {
 	_bsontype = 'ObjectID';
 }
 
+function getBsonValue(val: any, seen): any {
+	if (val == null || typeof val == "number" || typeof val == "string" || typeof val == "boolean")
+		return val;
+	else if (Array.isArray(val))
+		return val.map(item => getBsonValue(item, seen));
+	else {
+		switch (val.constructor.name.toLowerCase()) {
+			case "id":
+			case "objectid":
+				return {"$oid": val.toString()};
+
+			case "date":
+				return {"$Date": val.toISOString()};
+
+			case "regexp":
+				return {"$RegExp": val.toString()};
+
+			default:
+				if (seen.has(val)) return seen.get(val);
+				else {
+					let newJson = {};
+					bson2json(val, newJson, seen);
+					return newJson;
+				}
+		}
+	}
+}
+
 function bson2json(bson: any, json: any, seen): void {
-	if (seen.has(bson)) return;
-	else
+	if (!seen.has(bson)) {
 		seen.set(bson, json);
 
-	for (const key in bson) {
-		let val = bson[key];
-		if (val == null || typeof val == "number" || typeof val == "string" || typeof val == "boolean")
-			json[key] = val;
-		else {
-			if (val.constructor == null) {
-				return;
-			}
-			switch (val.constructor.name.toLowerCase()) {
-				case "id":
-				case "objectid":
-					json[key] = {"$oid": val.toString()};
-					break;
-
-				case "date":
-					json[key] = {"$Date": val.toISOString()};
-					break;
-
-				case "regexp":
-					json[key] = {"$RegExp": val.toString()};
-					break;
-
-				default:
-					if (Array.isArray(val)) {
-						json[key] = [];
-						for (const item of val) {
-							if (item == null || typeof item == "number" || typeof item == "string" || typeof item == "boolean")
-								json[key].push(item);
-							else {
-								let newJson = {};
-								bson2json(item, newJson, seen);
-								json[key].push(newJson);
-							}
-						}
-					} else if (seen.has(val)) {
-						json[key] = seen.get(val);
-					} else {
-						json[key] = {};
-						// seen.set(val, json[key]);
-						bson2json(val, json[key], seen);
-					}
-					break;
-			}
+		for (const key in bson) {
+			json[key] = getBsonValue(bson[key], seen);
 		}
 	}
 }
@@ -76,12 +62,7 @@ export function stringify(json: any, bson: boolean = false): string {
 		let seen = new WeakMap();
 
 		if (Array.isArray(json)) {
-			let array = [];
-			for (const item of json) {
-				let newJson = seen.has(item) ? seen.get(item) : {};
-				bson2json(item, newJson, seen);
-				array.push(newJson);
-			}
+			let array = json.map(item => getBsonValue(item, seen));
 			return stringifyCircular(array);
 		}
 
@@ -191,9 +172,6 @@ function stringifyCircular(data, space?) {
 }
 
 function parseCircular(data: string): any {
-	if (typeof data != "string") {
-		return data;
-	}
 	let hasCircular = /^\s/.test(data);
 	if (!hasCircular) {
 		return JSON.parse(data);
