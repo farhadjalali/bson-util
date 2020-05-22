@@ -64,7 +64,7 @@ function stringify(json, bson = false) {
     }
 }
 exports.stringify = stringify;
-function parse(text, bson = false) {
+function parse(text, bson = false, oidType = ID) {
     if (!text)
         return null;
     if (typeof text != "string") {
@@ -75,11 +75,11 @@ function parse(text, bson = false) {
     else {
         let json = parseCircular(text);
         let seen = new WeakSet();
-        return json2bson(json, seen);
+        return json2bson(json, seen, oidType);
     }
 }
 exports.parse = parse;
-function json2bson(json, seen) {
+function json2bson(json, seen, oidType) {
     if (seen.has(json))
         return json;
     seen.add(json);
@@ -89,7 +89,7 @@ function json2bson(json, seen) {
             continue;
         if (typeof val == "object") {
             if (val.$oid)
-                json[key] = new ID(val.$oid);
+                json[key] = new oidType(val.$oid);
             else if (val.$Date)
                 json[key] = new Date(Date.parse(val.$Date));
             else if (val.$RegExp) {
@@ -97,7 +97,7 @@ function json2bson(json, seen) {
                 json[key] = new RegExp(match[1], match[2]);
             }
             else
-                json[key] = json2bson(val, seen);
+                json[key] = json2bson(val, seen, oidType);
         }
     }
     return json;

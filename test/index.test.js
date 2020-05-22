@@ -1,11 +1,18 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const index_1 = require("../index");
+const bson_1 = require("bson");
 const sampleObjectID = "5e4d167d186e2305c0760ace";
 test("test ID equals", () => {
     let id1 = new index_1.ID(sampleObjectID);
     let id2 = new index_1.ID(sampleObjectID);
     expect(id1.equals(id2)).toBeTruthy();
+});
+test("test ObjectID", () => {
+    let id = { _id: new bson_1.ObjectID(sampleObjectID) };
+    let text = `{"_id":{"$oid":"${sampleObjectID}"}}`;
+    let oid = index_1.parse(text, true, bson_1.ObjectID);
+    expect(oid.toString()).toBe(id.toString());
 });
 describe("simple", () => {
     let json = {

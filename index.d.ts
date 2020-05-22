@@ -6,5 +6,5 @@ export declare class ID {
     _bsontype: string;
 }
 export declare function stringify(json: any, bson?: boolean): string;
-export declare function parse(text: string, bson?: boolean): any;
-export declare function json2bson(json: any, seen: any): any;
+export declare function parse(text: string, bson?: boolean, oidType?: any): any;
+export declare function json2bson(json: any, seen: any, oidType: any): any;

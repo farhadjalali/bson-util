@@ -72,7 +72,7 @@ export function stringify(json: any, bson: boolean = false): string {
 	}
 }
 
-export function parse(text: string, bson: boolean = false): any {
+export function parse(text: string, bson: boolean = false, oidType: any = ID): any {
 	if (!text) return null;
 	if (typeof text != "string") {
 		return text;
@@ -83,11 +83,11 @@ export function parse(text: string, bson: boolean = false): any {
 	else {
 		let json = parseCircular(text);
 		let seen = new WeakSet();
-		return json2bson(json, seen);
+		return json2bson(json, seen, oidType);
 	}
 }
 
-export function json2bson(json, seen): any {
+export function json2bson(json, seen, oidType): any {
 	if (seen.has(json)) return json;
 	seen.add(json);
 
@@ -96,14 +96,14 @@ export function json2bson(json, seen): any {
 		if (val == null) continue;
 		if (typeof val == "object") {
 			if (val.$oid)
-				json[key] = new ID(val.$oid);
+				json[key] = new oidType(val.$oid);
 			else if (val.$Date)
 				json[key] = new Date(Date.parse(val.$Date));
 			else if (val.$RegExp) {
 				let match = val.$RegExp.match(/\/(.+)\/(.*)/);
 				json[key] = new RegExp(match[1], match[2]);
 			} else
-				json[key] = json2bson(val, seen);
+				json[key] = json2bson(val, seen, oidType);
 		}
 	}
 	return json;

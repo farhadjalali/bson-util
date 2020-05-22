@@ -1,4 +1,5 @@
 import {ID, stringify, parse} from "../index";
+import {ObjectID} from "bson";
 
 const sampleObjectID = "5e4d167d186e2305c0760ace";
 
@@ -6,6 +7,13 @@ test("test ID equals", () => {
 	let id1 = new ID(sampleObjectID);
 	let id2 = new ID(sampleObjectID);
 	expect(id1.equals(id2)).toBeTruthy();
+});
+
+test("test ObjectID", () => {
+	let id = {_id: new ObjectID(sampleObjectID)};
+	let text = `{"_id":{"$oid":"${sampleObjectID}"}}`;
+	let oid = parse(text, true, ObjectID);
+	expect(oid.toString()).toBe(id.toString());
 });
 
 describe("simple", () => {
