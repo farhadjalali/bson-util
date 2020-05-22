@@ -20,41 +20,48 @@ function bson2json(bson, json, seen) {
     else
         seen.set(bson, json);
     for (const key in bson) {
-        let val = bson[key];
-        if (val == null)
-            json[key] = val;
-        else if (typeof val == "number" || typeof val == "string" || typeof val == "boolean")
-            json[key] = val;
-        else {
-            switch (val.constructor.name.toLowerCase()) {
-                case "id":
-                case "objectid":
-                    json[key] = { "$oid": val.toString() };
-                    break;
-                case "date":
-                    json[key] = { "$Date": val.toISOString() };
-                    break;
-                case "regexp":
-                    json[key] = { "$RegExp": val.toString() };
-                    break;
-                default:
-                    if (Array.isArray(val)) {
-                        json[key] = [];
-                        for (const item of val) {
-                            let newJson = {};
-                            bson2json(item, newJson, seen);
-                            json[key].push(newJson);
+        try {
+            let val = bson[key];
+            if (val == null || typeof val == "number" || typeof val == "string" || typeof val == "boolean")
+                json[key] = val;
+            else {
+                switch (val.constructor.name.toLowerCase()) {
+                    case "id":
+                    case "objectid":
+                        json[key] = { "$oid": val.toString() };
+                        break;
+                    case "date":
+                        json[key] = { "$Date": val.toISOString() };
+                        break;
+                    case "regexp":
+                        json[key] = { "$RegExp": val.toString() };
+                        break;
+                    default:
+                        if (Array.isArray(val)) {
+                            json[key] = [];
+                            for (const item of val) {
+                                if (item == null || typeof item == "number" || typeof item == "string" || typeof item == "boolean")
+                                    json[key].push(item);
+                                else {
+                                    let newJson = {};
+                                    bson2json(item, newJson, seen);
+                                    json[key].push(newJson);
+                                }
+                            }
                         }
-                    }
-                    else if (seen.has(val)) {
-                        json[key] = seen.get(val);
-                    }
-                    else {
-                        json[key] = {};
-                        bson2json(val, json[key], seen);
-                    }
-                    break;
+                        else if (seen.has(val)) {
+                            json[key] = seen.get(val);
+                        }
+                        else {
+                            json[key] = {};
+                            bson2json(val, json[key], seen);
+                        }
+                        break;
+                }
             }
+        }
+        catch (e) {
+            throw e;
         }
     }
 }
