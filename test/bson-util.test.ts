@@ -2,6 +2,12 @@ import {ID, stringify, parse} from "../bson-util";
 
 const sampleObjectID = "5e4d167d186e2305c0760ace";
 
+test("test ID equals", () => {
+	let id1 = new ID(sampleObjectID);
+	let id2 = new ID(sampleObjectID);
+	expect(id1.equals(id2)).toBeTruthy();
+});
+
 describe("simple", () => {
 	let json = {
 		name: "Canada",
@@ -11,6 +17,11 @@ describe("simple", () => {
 	};
 	let text = `{"name":"Canada","enable":true,"no":null,"age":10.5}`;
 
+	test("stringify null", () => {
+		let _text = stringify(null);
+		expect(_text).toBeNull();
+	});
+
 	test("stringify", () => {
 		let _text = stringify(json);
 		expect(_text).toBe(text);
@@ -19,6 +30,11 @@ describe("simple", () => {
 	test("parse", () => {
 		let _json = parse(text);
 		expect(_json).toStrictEqual(json);
+	});
+
+	test("parse empty", () => {
+		let _json = parse("");
+		expect(_json).toBeNull();
 	});
 });
 
@@ -160,5 +176,26 @@ describe("bson circular bson", () => {
 	test("parse", () => {
 		let _json = parse(text, true);
 		expect(_json).toEqual(json);
+	});
+});
+
+describe("bson array circular bson", () => {
+	let json = {
+		_id: new ID(sampleObjectID),
+		name: "Shila",
+		self: null
+	};
+	json.self = json;
+	let array = [json, json];
+	let text = ` [[1,1],{"_id":2,"name":4,"self":1},{"$oid":3},"5e4d167d186e2305c0760ace","Shila"]`;
+
+	test("stringify", () => {
+		let _text = stringify(array, true);
+		expect(_text).toBe(text);
+	});
+
+	test("parse", () => {
+		let _json = parse(text, true);
+		expect(_json).toEqual(array);
 	});
 });

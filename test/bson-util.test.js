@@ -2,6 +2,11 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const bson_util_1 = require("../bson-util");
 const sampleObjectID = "5e4d167d186e2305c0760ace";
+test("test ID equals", () => {
+    let id1 = new bson_util_1.ID(sampleObjectID);
+    let id2 = new bson_util_1.ID(sampleObjectID);
+    expect(id1.equals(id2)).toBeTruthy();
+});
 describe("simple", () => {
     let json = {
         name: "Canada",
@@ -10,6 +15,10 @@ describe("simple", () => {
         age: 10.5
     };
     let text = `{"name":"Canada","enable":true,"no":null,"age":10.5}`;
+    test("stringify null", () => {
+        let _text = bson_util_1.stringify(null);
+        expect(_text).toBeNull();
+    });
     test("stringify", () => {
         let _text = bson_util_1.stringify(json);
         expect(_text).toBe(text);
@@ -17,6 +26,10 @@ describe("simple", () => {
     test("parse", () => {
         let _json = bson_util_1.parse(text);
         expect(_json).toStrictEqual(json);
+    });
+    test("parse empty", () => {
+        let _json = bson_util_1.parse("");
+        expect(_json).toBeNull();
     });
 });
 describe("simple array", () => {
@@ -136,6 +149,24 @@ describe("bson circular bson", () => {
     test("parse", () => {
         let _json = bson_util_1.parse(text, true);
         expect(_json).toEqual(json);
+    });
+});
+describe("bson array circular bson", () => {
+    let json = {
+        _id: new bson_util_1.ID(sampleObjectID),
+        name: "Shila",
+        self: null
+    };
+    json.self = json;
+    let array = [json, json];
+    let text = ` [[1,1],{"_id":2,"name":4,"self":1},{"$oid":3},"5e4d167d186e2305c0760ace","Shila"]`;
+    test("stringify", () => {
+        let _text = bson_util_1.stringify(array, true);
+        expect(_text).toBe(text);
+    });
+    test("parse", () => {
+        let _json = bson_util_1.parse(text, true);
+        expect(_json).toEqual(array);
     });
 });
 //# sourceMappingURL=bson-util.test.js.map

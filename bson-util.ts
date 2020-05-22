@@ -60,7 +60,7 @@ function bson2json(bson: any, json: any, seen): void {
 			}
 		}
 	}
-	return json;
+
 }
 
 export function stringify(json: any, bson: boolean = false): string {
@@ -71,10 +71,10 @@ export function stringify(json: any, bson: boolean = false): string {
 	else {
 		let seen = new WeakMap();
 
-		if (Array.isArray(bson)) {
+		if (Array.isArray(json)) {
 			let array = [];
-			for (const item of bson) {
-				let newJson = {};
+			for (const item of json) {
+				let newJson = seen.has(item) ? seen.get(item) : {};
 				bson2json(item, newJson, seen);
 				array.push(newJson);
 			}
@@ -121,7 +121,7 @@ export function json2bson(json, seen): any {
 	return json;
 }
 
-function encode(data, replacer, list, seen) {
+function encode(data, list, seen) {
 	let stored, key, value, i, l;
 	let seenIndex = seen.get(data);
 	if (seenIndex != null) return seenIndex;
@@ -135,8 +135,7 @@ function encode(data, replacer, list, seen) {
 		for (i = 0, l = keys.length; i < l; i++) {
 			key = keys[i];
 			value = data[key];
-			if (replacer) value = replacer.call(data, key, value);
-			stored[key] = encode(value, replacer, list, seen);
+			stored[key] = encode(value, list, seen);
 		}
 	} else if (proto === '[object Array]') {
 		stored = [];
@@ -144,8 +143,7 @@ function encode(data, replacer, list, seen) {
 		list.push(stored);
 		for (i = 0, l = data.length; i < l; i++) {
 			value = data[i];
-			if (replacer) value = replacer.call(data, i, value);
-			stored[i] = encode(value, replacer, list, seen);
+			stored[i] = encode(value, list, seen);
 		}
 	} else {
 		list.push(data);
@@ -153,7 +151,7 @@ function encode(data, replacer, list, seen) {
 	return index
 }
 
-function decode(list, reviver) {
+function decode(list) {
 	let i = list.length;
 	let j, k, data, key, value, proto;
 	while (i--) {
@@ -164,42 +162,34 @@ function decode(list, reviver) {
 			for (j = 0, k = keys.length; j < k; j++) {
 				key = keys[j];
 				value = list[data[key]];
-				if (reviver) value = reviver.call(data, key, value);
 				data[key] = value
 			}
 		} else if (proto === '[object Array]') {
 			for (j = 0, k = data.length; j < k; j++) {
 				value = list[data[j]];
-				if (reviver) value = reviver.call(data, j, value);
 				data[j] = value
 			}
 		}
 	}
 }
 
-function stringifyCircular(data, replacer?, space?) {
+function stringifyCircular(data, space?) {
 	try {
-		return arguments.length === 1
-			? JSON.stringify(data)
-			: JSON.stringify(data, replacer, space)
+		return arguments.length === 1 ? JSON.stringify(data) : JSON.stringify(data, space);
 	} catch (e) {
 		let list = [];
-		encode(data, replacer, list, new Map());
-		return space
-			? ' ' + JSON.stringify(list, null, space)
-			: ' ' + JSON.stringify(list);
+		encode(data, list, new Map());
+		return space ? ' ' + JSON.stringify(list, null, space) : ' ' + JSON.stringify(list);
 	}
 }
 
-function parseCircular(data, reviver?) {
+function parseCircular(data) {
 	let hasCircular = /^\s/.test(data);
 	if (!hasCircular) {
-		return arguments.length === 1
-			? JSON.parse(data)
-			: JSON.parse(data, reviver)
+		return JSON.parse(data);
 	} else {
 		let list = JSON.parse(data);
-		decode(list, reviver);
+		decode(list);
 		return list[0]
 	}
 }
