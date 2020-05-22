@@ -1,4 +1,4 @@
-import {ID, stringify, parse} from "../bson-util";
+import {ID, stringify, parse} from "../index";
 
 const sampleObjectID = "5e4d167d186e2305c0760ace";
 

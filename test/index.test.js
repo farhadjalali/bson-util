@@ -1,10 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const bson_util_1 = require("../bson-util");
+const index_1 = require("../index");
 const sampleObjectID = "5e4d167d186e2305c0760ace";
 test("test ID equals", () => {
-    let id1 = new bson_util_1.ID(sampleObjectID);
-    let id2 = new bson_util_1.ID(sampleObjectID);
+    let id1 = new index_1.ID(sampleObjectID);
+    let id2 = new index_1.ID(sampleObjectID);
     expect(id1.equals(id2)).toBeTruthy();
 });
 describe("simple", () => {
@@ -16,19 +16,19 @@ describe("simple", () => {
     };
     let text = `{"name":"Canada","enable":true,"no":null,"age":10.5}`;
     test("stringify null", () => {
-        let _text = bson_util_1.stringify(null);
+        let _text = index_1.stringify(null);
         expect(_text).toBeNull();
     });
     test("stringify", () => {
-        let _text = bson_util_1.stringify(json);
+        let _text = index_1.stringify(json);
         expect(_text).toBe(text);
     });
     test("parse", () => {
-        let _json = bson_util_1.parse(text);
+        let _json = index_1.parse(text);
         expect(_json).toStrictEqual(json);
     });
     test("parse empty", () => {
-        let _json = bson_util_1.parse("");
+        let _json = index_1.parse("");
         expect(_json).toBeNull();
     });
 });
@@ -39,17 +39,17 @@ describe("simple array", () => {
     };
     let text = `{"addresses":[{"city":"London"},{"city":"Paris"}],"enable":true}`;
     test("stringify", () => {
-        let _text = bson_util_1.stringify(json);
+        let _text = index_1.stringify(json);
         expect(_text).toBe(text);
     });
     test("parse", () => {
-        let _json = bson_util_1.parse(text);
+        let _json = index_1.parse(text);
         expect(_json).toStrictEqual(json);
     });
 });
 describe("bson simple", () => {
     let json = {
-        _id: new bson_util_1.ID(sampleObjectID),
+        _id: new index_1.ID(sampleObjectID),
         name: "Canada",
         enable: true,
         no: null,
@@ -60,43 +60,43 @@ describe("bson simple", () => {
     };
     let text = `{"_id":{"$oid":"${sampleObjectID}"},"name":"Canada","enable":true,"no":null,"age":10.5,"date":{"$Date":"2020-01-01T00:00:00.000Z"},"match":{"$RegExp":"/^\\\\w+/g"}}`;
     test("stringify", () => {
-        let _text = bson_util_1.stringify(json, true);
+        let _text = index_1.stringify(json, true);
         expect(_text).toBe(text);
     });
     test("bson simple parse", () => {
-        let _json = bson_util_1.parse(text, true);
+        let _json = index_1.parse(text, true);
         expect(_json).toEqual(json);
     });
 });
 describe("bson nested", () => {
     let json = {
-        _id: new bson_util_1.ID(sampleObjectID),
+        _id: new index_1.ID(sampleObjectID),
         name: "Shila",
         address: { city: "London" }
     };
     let text = `{"_id":{"$oid":"${sampleObjectID}"},"name":"Shila","address":{"city":"London"}}`;
     test("stringify", () => {
-        let _text = bson_util_1.stringify(json, true);
+        let _text = index_1.stringify(json, true);
         expect(_text).toBe(text);
     });
     test("parse", () => {
-        let _json = bson_util_1.parse(text, true);
+        let _json = index_1.parse(text, true);
         expect(_json).toEqual(json);
     });
 });
 describe("bson array", () => {
     let json = {
-        _id: new bson_util_1.ID(sampleObjectID),
+        _id: new index_1.ID(sampleObjectID),
         name: "Shila",
         addresses: [{ city: "London" }, { city: "Paris" }]
     };
     let text = `{"_id":{"$oid":"${sampleObjectID}"},"name":"Shila","addresses":[{"city":"London"},{"city":"Paris"}]}`;
     test("stringify", () => {
-        let _text = bson_util_1.stringify(json, true);
+        let _text = index_1.stringify(json, true);
         expect(_text).toBe(text);
     });
     test("parse", () => {
-        let _json = bson_util_1.parse(text, true);
+        let _json = index_1.parse(text, true);
         expect(_json).toEqual(json);
     });
 });
@@ -108,11 +108,11 @@ describe("simple bson circular", () => {
     json.self = json;
     let text = ` [{"name":1,"self":0},"Shila"]`;
     test("stringify", () => {
-        let _text = bson_util_1.stringify(json, true);
+        let _text = index_1.stringify(json, true);
         expect(_text).toBe(text);
     });
     test("parse", () => {
-        let _json = bson_util_1.parse(text, true);
+        let _json = index_1.parse(text, true);
         expect(_json).toEqual(json);
     });
 });
@@ -126,34 +126,34 @@ describe("bson circular", () => {
     json.self = json;
     let text = ` [{"name":1,"age":2,"_id":5,"self":0},"Shila",[3,4],30,40,{"name":6},"${sampleObjectID}"]`;
     test("stringify", () => {
-        let _text = bson_util_1.stringify(json, false);
+        let _text = index_1.stringify(json, false);
         expect(_text).toBe(text);
     });
     test("parse", () => {
-        let _json = bson_util_1.parse(text, false);
+        let _json = index_1.parse(text, false);
         expect(_json).toEqual(json);
     });
 });
 describe("bson circular bson", () => {
     let json = {
-        _id: new bson_util_1.ID(sampleObjectID),
+        _id: new index_1.ID(sampleObjectID),
         name: "Shila",
         self: null
     };
     json.self = json;
     let text = ` [{"_id":1,"name":3,"self":0},{"$oid":2},"5e4d167d186e2305c0760ace","Shila"]`;
     test("stringify", () => {
-        let _text = bson_util_1.stringify(json, true);
+        let _text = index_1.stringify(json, true);
         expect(_text).toBe(text);
     });
     test("parse", () => {
-        let _json = bson_util_1.parse(text, true);
+        let _json = index_1.parse(text, true);
         expect(_json).toEqual(json);
     });
 });
 describe("bson array circular bson", () => {
     let json = {
-        _id: new bson_util_1.ID(sampleObjectID),
+        _id: new index_1.ID(sampleObjectID),
         name: "Shila",
         self: null
     };
@@ -161,12 +161,12 @@ describe("bson array circular bson", () => {
     let array = [json, json];
     let text = ` [[1,1],{"_id":2,"name":4,"self":1},{"$oid":3},"5e4d167d186e2305c0760ace","Shila"]`;
     test("stringify", () => {
-        let _text = bson_util_1.stringify(array, true);
+        let _text = index_1.stringify(array, true);
         expect(_text).toBe(text);
     });
     test("parse", () => {
-        let _json = bson_util_1.parse(text, true);
+        let _json = index_1.parse(text, true);
         expect(_json).toEqual(array);
     });
 });
-//# sourceMappingURL=bson-util.test.js.map
+//# sourceMappingURL=index.test.js.map

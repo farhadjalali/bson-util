@@ -34,7 +34,7 @@ You can find more samples in **main.test.ts**.
 let A: any = {b: new ObjectID(), c: 1};
 A.a = A;
 
-let newA = parse(stringify(A));
+let newA = parse(stringify(A, true), true);
 // newA == A
 
 ```
