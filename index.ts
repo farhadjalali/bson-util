@@ -15,7 +15,7 @@ export class ID {
 	_bsontype = 'ObjectID';
 }
 
-function getBsonValue(val: any, seen): any {
+export function getBsonValue(val: any, seen): any {
 	if (val == null || typeof val == "number" || typeof val == "string" || typeof val == "boolean")
 		return val;
 	else if (Array.isArray(val))
@@ -33,7 +33,7 @@ function getBsonValue(val: any, seen): any {
 				return {"$RegExp": val.toString()};
 
 			default:
-				if (seen.has(val)) return seen.get(val);
+				if (seen && seen.has(val)) return seen.get(val);
 				else {
 					let newJson = {};
 					bson2json(val, newJson, seen);

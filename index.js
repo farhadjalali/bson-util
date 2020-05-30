@@ -28,7 +28,7 @@ function getBsonValue(val, seen) {
             case "regexp":
                 return { "$RegExp": val.toString() };
             default:
-                if (seen.has(val))
+                if (seen && seen.has(val))
                     return seen.get(val);
                 else {
                     let newJson = {};
@@ -38,6 +38,7 @@ function getBsonValue(val, seen) {
         }
     }
 }
+exports.getBsonValue = getBsonValue;
 function bson2json(bson, json, seen) {
     if (!seen.has(bson)) {
         seen.set(bson, json);
