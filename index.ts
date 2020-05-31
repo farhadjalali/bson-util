@@ -20,26 +20,18 @@ export function getBsonValue(val: any, seen): any {
 		return val;
 	else if (Array.isArray(val))
 		return val.map(item => getBsonValue(item, seen));
+	else if (val instanceof Date)
+		return {"$Date": val.toISOString()};
+	else if (val instanceof RegExp)
+		return {"$RegExp": val.toString()};
+	else if (val._bsontype && val._bsontype.toLowerCase() == "objectid")
+		return {"$oid": val.toString()};
+	else if (seen && seen.has(val))
+		return seen.get(val);
 	else {
-		switch (val.constructor.name.toLowerCase()) {
-			case "id":
-			case "objectid":
-				return {"$oid": val.toString()};
-
-			case "date":
-				return {"$Date": val.toISOString()};
-
-			case "regexp":
-				return {"$RegExp": val.toString()};
-
-			default:
-				if (seen && seen.has(val)) return seen.get(val);
-				else {
-					let newJson = {};
-					bson2json(val, newJson, seen);
-					return newJson;
-				}
-		}
+		let newJson = {};
+		bson2json(val, newJson, seen);
+		return newJson;
 	}
 }
 
