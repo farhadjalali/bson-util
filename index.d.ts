@@ -1,5 +1,10 @@
 export declare class ID {
     constructor(id: string);
+    static increment: number;
+    static machine: number;
+    static pid: number;
+    static generateByBrowser(): ID;
+    static generate(): ID;
     equals(another: ID): boolean;
     toString(): string;
     id: Uint8Array;

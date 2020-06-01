@@ -201,4 +201,12 @@ describe("inner array of bson", () => {
         expect(_json).toEqual(json);
     });
 });
+describe("generate ID", () => {
+    let newID = index_1.ID.generate();
+    let newIDStr = newID.toString();
+    expect(newIDStr.length).toEqual(24);
+    let newID2 = index_1.ID.generate();
+    let newIDStr2 = newID2.toString();
+    expect(newIDStr2.length).toEqual(24);
+});
 //# sourceMappingURL=index.test.js.map
