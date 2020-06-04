@@ -54,6 +54,8 @@ export class ID {
 export function getBsonValue(val: any, seen): any {
 	if (val == null || typeof val == "number" || typeof val == "string" || typeof val == "boolean")
 		return val;
+	else if (typeof val == "function")
+		return {"$Func": true};
 	else if (Array.isArray(val))
 		return val.map(item => getBsonValue(item, seen));
 	else if (val instanceof Date)
@@ -76,7 +78,11 @@ function bson2json(bson: any, json: any, seen): void {
 		seen.set(bson, json);
 
 		for (const key in bson) {
-			json[key] = getBsonValue(bson[key], seen);
+			try {
+				json[key] = getBsonValue(bson[key], seen);
+			} catch (ex) {
+				throw ex;
+			}
 		}
 	}
 }

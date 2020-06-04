@@ -249,3 +249,34 @@ describe("generate ID", () => {
 	let newIDStr2 = newID2.toString();
 	expect(newIDStr2.length).toEqual(24);
 });
+
+describe("serialize undefined", () => {
+	let json = {
+		name: undefined,
+		_id: {"name": undefined},
+	};
+	let text = `{"_id":{}}`;
+
+	test("stringify", () => {
+		let _text = stringify(json, true);
+		expect(_text).toBe(text);
+	});
+});
+
+
+describe("serialize function", () => {
+	let json = {
+		name: (value) => {
+			return 1;
+		},
+		city: 'London'
+	};
+
+	let text = `{"name":{"$Func":true},"city":"London"}`;
+
+	test("stringify", () => {
+		let _text = stringify(json, true);
+		expect(_text).toBe(text);
+	});
+});
+

@@ -1,50 +1,56 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-class ID {
-    constructor(id) {
-        this._bsontype = 'ObjectID';
-        this.id = new Uint8Array(id.match(/[\da-f]{2}/gi).map(h => parseInt(h, 16)));
-    }
-    static generateByBrowser() {
-        if (!this.machine) {
-            let machineID = localStorage.getItem('mongoMachineId');
-            let id = this.generate();
-            localStorage.setItem('mongoMachineId', this.machine.toString());
-            return id;
+exports.json2bson = exports.parse = exports.stringify = exports.getBsonValue = exports.ID = void 0;
+let ID = (() => {
+    class ID {
+        constructor(id) {
+            this._bsontype = 'ObjectID';
+            this.id = new Uint8Array(id.match(/[\da-f]{2}/gi).map(h => parseInt(h, 16)));
         }
-        else
-            return this.generate();
+        static generateByBrowser() {
+            if (!this.machine) {
+                let machineID = localStorage.getItem('mongoMachineId');
+                let id = this.generate();
+                localStorage.setItem('mongoMachineId', this.machine.toString());
+                return id;
+            }
+            else
+                return this.generate();
+        }
+        static generate() {
+            this.machine = this.machine || Math.floor(Math.random() * (16777216));
+            let machineStr = this.machine.toString(16);
+            this.increment = this.increment || Math.floor(Math.random() * (16777216));
+            this.increment = this.increment >= 0xffffff ? 0 : this.increment + 1;
+            let incrementStr = this.increment.toString(16);
+            this.pid = this.pid || Math.floor(Math.random() * (65536));
+            let pidStr = this.pid.toString(16);
+            let timestamp = Math.floor(new Date().valueOf() / 1000);
+            let timestampStr = timestamp.toString(16);
+            let value = '00000000'.substr(0, 8 - timestampStr.length) + timestampStr +
+                '000000'.substr(0, 6 - machineStr.length) + machineStr +
+                '0000'.substr(0, 4 - pidStr.length) + pidStr +
+                '000000'.substr(0, 6 - incrementStr.length) + incrementStr;
+            return new ID(value);
+        }
+        equals(another) {
+            return this.toString() == another.toString();
+        }
+        toString() {
+            return Array.from(this.id).map(i => ('0' + i.toString(16)).slice(-2)).join('');
+        }
     }
-    static generate() {
-        this.machine = this.machine || Math.floor(Math.random() * (16777216));
-        let machineStr = this.machine.toString(16);
-        this.increment = this.increment || Math.floor(Math.random() * (16777216));
-        this.increment = this.increment >= 0xffffff ? 0 : this.increment + 1;
-        let incrementStr = this.increment.toString(16);
-        this.pid = this.pid || Math.floor(Math.random() * (65536));
-        let pidStr = this.pid.toString(16);
-        let timestamp = Math.floor(new Date().valueOf() / 1000);
-        let timestampStr = timestamp.toString(16);
-        let value = '00000000'.substr(0, 8 - timestampStr.length) + timestampStr +
-            '000000'.substr(0, 6 - machineStr.length) + machineStr +
-            '0000'.substr(0, 4 - pidStr.length) + pidStr +
-            '000000'.substr(0, 6 - incrementStr.length) + incrementStr;
-        return new ID(value);
-    }
-    equals(another) {
-        return this.toString() == another.toString();
-    }
-    toString() {
-        return Array.from(this.id).map(i => ('0' + i.toString(16)).slice(-2)).join('');
-    }
-}
+    ID.increment = 0;
+    ID.machine = 0;
+    ID.pid = 0;
+    return ID;
+})();
 exports.ID = ID;
-ID.increment = 0;
-ID.machine = 0;
-ID.pid = 0;
 function getBsonValue(val, seen) {
     if (val == null || typeof val == "number" || typeof val == "string" || typeof val == "boolean")
         return val;
+    else if (typeof val == "function")
+        return { "$Func": true };
     else if (Array.isArray(val))
         return val.map(item => getBsonValue(item, seen));
     else if (val instanceof Date)
@@ -66,7 +72,12 @@ function bson2json(bson, json, seen) {
     if (!seen.has(bson)) {
         seen.set(bson, json);
         for (const key in bson) {
-            json[key] = getBsonValue(bson[key], seen);
+            try {
+                json[key] = getBsonValue(bson[key], seen);
+            }
+            catch (ex) {
+                throw ex;
+            }
         }
     }
 }
