@@ -89,6 +89,8 @@ function stringify(json, bson = false) {
             let array = json.map(item => getBsonValue(item, seen));
             return stringifyCircular(array);
         }
+        else if (json._bsontype && json._bsontype.toLowerCase() == "objectid")
+            return `{"$oid": "${json}"}`;
         let newJson = {};
         bson2json(json, newJson, seen);
         return stringifyCircular(newJson);
