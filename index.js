@@ -123,8 +123,8 @@ function json2bson(json, seen, oidType) {
         if (typeof val == "object") {
             if (val.$oid)
                 json[key] = new oidType(val.$oid);
-            else if (val.$Date)
-                json[key] = new Date(Date.parse(val.$Date));
+            else if (val.$Date || val.$date)
+                json[key] = new Date(Date.parse(val.$Date || val.$date));
             else if (val.$RegExp) {
                 let match = val.$RegExp.match(/\/(.+)\/(.*)/);
                 json[key] = new RegExp(match[1], match[2]);
