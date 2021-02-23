@@ -11,7 +11,7 @@ export class ID {
         if (!this.machine) {
             // let machineID = localStorage.getItem('mongoMachineId');
             const id = this.generate();
-            localStorage.setItem('mongoMachineId', this.machine.toString());
+            localStorage.setItem("mongoMachineId", this.machine.toString());
             return id;
         } else
             return this.generate();
@@ -31,10 +31,10 @@ export class ID {
         const timestamp = Math.floor(new Date().valueOf() / 1000);
         const timestampStr = timestamp.toString(16);
 
-        const value = '00000000'.substr(0, 8 - timestampStr.length) + timestampStr +
-            '000000'.substr(0, 6 - machineStr.length) + machineStr +
-            '0000'.substr(0, 4 - pidStr.length) + pidStr +
-            '000000'.substr(0, 6 - incrementStr.length) + incrementStr;
+        const value = "00000000".substr(0, 8 - timestampStr.length) + timestampStr +
+            "000000".substr(0, 6 - machineStr.length) + machineStr +
+            "0000".substr(0, 4 - pidStr.length) + pidStr +
+            "000000".substr(0, 6 - incrementStr.length) + incrementStr;
 
         return new ID(value);
     }
@@ -44,11 +44,11 @@ export class ID {
     }
 
     toString(): string {
-        return Array.from(this.id).map(i => ('0' + i.toString(16)).slice(-2)).join('');
+        return Array.from(this.id).map(i => ("0" + i.toString(16)).slice(-2)).join("");
     }
 
     id: Uint8Array;
-    _bsontype = 'ObjectID';
+    _bsontype = "ObjectID";
 }
 
 export function getBsonValue(val: any, seen): any {
@@ -79,17 +79,13 @@ function bson2json(bson: any, json: any, seen): void {
 
         for (const key in bson) {
             if (Object.prototype.hasOwnProperty.call(bson, key)) {
-                try {
-                    json[key] = getBsonValue(bson[key], seen);
-                } catch (ex) {
-                    throw ex;
-                }
+                json[key] = getBsonValue(bson[key], seen);
             }
         }
     }
 }
 
-export function stringify(json: any, bson: boolean = false): string {
+export function stringify(json: any, bson = false): string {
     if (json == null) return null;
 
     if (!bson)
@@ -109,7 +105,7 @@ export function stringify(json: any, bson: boolean = false): string {
     }
 }
 
-export function parse(text: string, bson: boolean = false, oidType: any = ID): any {
+export function parse(text: string, bson = false, oidType: any = ID): any {
     if (!text) return null;
     if (typeof text !== "string") {
         return text;
@@ -124,7 +120,7 @@ export function parse(text: string, bson: boolean = false, oidType: any = ID): a
     }
 }
 
-export function json2bson(json, seen, oidType): any {
+export function json2bson(json, seen, oidType: any): any {
     if (seen.has(json)) return json;
     seen.add(json);
 
@@ -153,7 +149,7 @@ function encode(data, list, seen) {
     if (seenIndex != null) return seenIndex;
     const index = list.length;
     const proto = Object.prototype.toString.call(data);
-    if (proto === '[object Object]') {
+    if (proto === "[object Object]") {
         const stored = {};
         seen.set(data, index);
         list.push(stored);
@@ -163,7 +159,7 @@ function encode(data, list, seen) {
             const value = data[key];
             stored[key] = encode(value, list, seen);
         }
-    } else if (proto === '[object Array]') {
+    } else if (proto === "[object Array]") {
         const stored = [];
         seen.set(data, index);
         list.push(stored);
@@ -174,7 +170,7 @@ function encode(data, list, seen) {
     } else {
         list.push(data);
     }
-    return index
+    return index;
 }
 
 function decode(list) {
@@ -182,17 +178,17 @@ function decode(list) {
     while (i--) {
         const data = list[i];
         const proto = Object.prototype.toString.call(data);
-        if (proto === '[object Object]') {
+        if (proto === "[object Object]") {
             const keys = Object.keys(data);
             for (let j = 0, k = keys.length; j < k; j++) {
                 const key = keys[j];
                 const value = list[data[key]];
-                data[key] = value
+                data[key] = value;
             }
-        } else if (proto === '[object Array]') {
+        } else if (proto === "[object Array]") {
             for (let j = 0, k = data.length; j < k; j++) {
                 const value = list[data[j]];
-                data[j] = value
+                data[j] = value;
             }
         }
     }
@@ -204,7 +200,7 @@ function stringifyCircular(data, space?) {
     } catch (e) {
         const list = [];
         encode(data, list, new Map());
-        return space ? ' ' + JSON.stringify(list, null, space) : ' ' + JSON.stringify(list);
+        return space ? " " + JSON.stringify(list, null, space) : " " + JSON.stringify(list);
     }
 }
 
@@ -215,6 +211,6 @@ function parseCircular(data: string): any {
     } else {
         const list = JSON.parse(data);
         decode(list);
-        return list[0]
+        return list[0];
     }
 }
