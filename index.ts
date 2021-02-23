@@ -9,8 +9,8 @@ export class ID {
 
     static generateByBrowser(): ID {
         if (!this.machine) {
-            let machineID = localStorage.getItem('mongoMachineId');
-            let id = this.generate();
+            // let machineID = localStorage.getItem('mongoMachineId');
+            const id = this.generate();
             localStorage.setItem('mongoMachineId', this.machine.toString());
             return id;
         } else
@@ -19,19 +19,19 @@ export class ID {
 
     static generate(): ID {
         this.machine = this.machine || Math.floor(Math.random() * (16777216));
-        let machineStr = this.machine.toString(16);
+        const machineStr = this.machine.toString(16);
 
         this.increment = this.increment || Math.floor(Math.random() * (16777216));
         this.increment = this.increment >= 0xffffff ? 0 : this.increment + 1;
-        let incrementStr = this.increment.toString(16);
+        const incrementStr = this.increment.toString(16);
 
         this.pid = this.pid || Math.floor(Math.random() * (65536));
-        let pidStr = this.pid.toString(16);
+        const pidStr = this.pid.toString(16);
 
-        let timestamp = Math.floor(new Date().valueOf() / 1000);
-        let timestampStr = timestamp.toString(16);
+        const timestamp = Math.floor(new Date().valueOf() / 1000);
+        const timestampStr = timestamp.toString(16);
 
-        let value = '00000000'.substr(0, 8 - timestampStr.length) + timestampStr +
+        const value = '00000000'.substr(0, 8 - timestampStr.length) + timestampStr +
             '000000'.substr(0, 6 - machineStr.length) + machineStr +
             '0000'.substr(0, 4 - pidStr.length) + pidStr +
             '000000'.substr(0, 6 - incrementStr.length) + incrementStr;
@@ -40,7 +40,7 @@ export class ID {
     }
 
     equals(another: ID): boolean {
-        return this.toString() == another.toString();
+        return this.toString() === another.toString();
     }
 
     toString(): string {
@@ -52,9 +52,9 @@ export class ID {
 }
 
 export function getBsonValue(val: any, seen): any {
-    if (val == null || typeof val == "number" || typeof val == "string" || typeof val == "boolean")
+    if (val == null || typeof val === "number" || typeof val === "string" || typeof val === "boolean")
         return val;
-    else if (typeof val == "function")
+    else if (typeof val === "function")
         return {"$Func": true};
     else if (Array.isArray(val))
         return val.map(item => getBsonValue(item, seen));
@@ -62,12 +62,12 @@ export function getBsonValue(val: any, seen): any {
         return {"$Date": val.toISOString()};
     else if (val instanceof RegExp)
         return {"$RegExp": val.toString()};
-    else if (val._bsontype && val._bsontype.toLowerCase() == "objectid")
+    else if (val._bsontype && val._bsontype.toLowerCase() === "objectid")
         return {"$oid": val.toString()};
     else if (seen && seen.has(val))
         return seen.get(val);
     else {
-        let newJson = {};
+        const newJson = {};
         bson2json(val, newJson, seen);
         return newJson;
     }
@@ -78,10 +78,12 @@ function bson2json(bson: any, json: any, seen): void {
         seen.set(bson, json);
 
         for (const key in bson) {
-            try {
-                json[key] = getBsonValue(bson[key], seen);
-            } catch (ex) {
-                throw ex;
+            if (Object.prototype.hasOwnProperty.call(bson, key)) {
+                try {
+                    json[key] = getBsonValue(bson[key], seen);
+                } catch (ex) {
+                    throw ex;
+                }
             }
         }
     }
@@ -93,15 +95,15 @@ export function stringify(json: any, bson: boolean = false): string {
     if (!bson)
         return stringifyCircular(json);
     else {
-        let seen = new WeakMap();
+        const seen = new WeakMap();
 
         if (Array.isArray(json)) {
-            let array = json.map(item => getBsonValue(item, seen));
+            const array = json.map(item => getBsonValue(item, seen));
             return stringifyCircular(array);
-        } else if (json._bsontype && json._bsontype.toLowerCase() == "objectid")
+        } else if (json._bsontype && json._bsontype.toLowerCase() === "objectid")
             return `{"$oid": "${json}"}`;
 
-        let newJson = {};
+        const newJson = {};
         bson2json(json, newJson, seen);
         return stringifyCircular(newJson);
     }
@@ -109,15 +111,15 @@ export function stringify(json: any, bson: boolean = false): string {
 
 export function parse(text: string, bson: boolean = false, oidType: any = ID): any {
     if (!text) return null;
-    if (typeof text != "string") {
+    if (typeof text !== "string") {
         return text;
     }
 
     if (!bson)
         return parseCircular(text);
     else {
-        let json = parseCircular(text);
-        let seen = new WeakSet();
+        const json = parseCircular(text);
+        const seen = new WeakSet();
         return json2bson(json, seen, oidType);
     }
 }
@@ -127,45 +129,46 @@ export function json2bson(json, seen, oidType): any {
     seen.add(json);
 
     for (const key in json) {
-        let val = json[key];
-        if (val == null) continue;
-        if (typeof val == "object") {
-            if (val.$oid)
-                json[key] = new oidType(val.$oid);
-            else if (val.$Date || val.$date)
-                json[key] = new Date(Date.parse(val.$Date || val.$date));
-            else if (val.$RegExp) {
-                let match = val.$RegExp.match(/\/(.+)\/(.*)/);
-                json[key] = new RegExp(match[1], match[2]);
-            } else
-                json[key] = json2bson(val, seen, oidType);
+        if (Object.prototype.hasOwnProperty.call(json, key)) {
+            const val = json[key];
+            if (val == null) continue;
+            if (typeof val === "object") {
+                if (val.$oid)
+                    json[key] = new oidType(val.$oid);
+                else if (val.$Date || val.$date)
+                    json[key] = new Date(Date.parse(val.$Date || val.$date));
+                else if (val.$RegExp) {
+                    const match = val.$RegExp.match(/\/(.+)\/(.*)/);
+                    json[key] = new RegExp(match[1], match[2]);
+                } else
+                    json[key] = json2bson(val, seen, oidType);
+            }
         }
     }
     return json;
 }
 
 function encode(data, list, seen) {
-    let stored, key, value, i, l;
-    let seenIndex = seen.get(data);
+    const seenIndex = seen.get(data);
     if (seenIndex != null) return seenIndex;
-    let index = list.length;
-    let proto = Object.prototype.toString.call(data);
+    const index = list.length;
+    const proto = Object.prototype.toString.call(data);
     if (proto === '[object Object]') {
-        stored = {};
+        const stored = {};
         seen.set(data, index);
         list.push(stored);
-        let keys = Object.keys(data);
-        for (i = 0, l = keys.length; i < l; i++) {
-            key = keys[i];
-            value = data[key];
+        const keys = Object.keys(data);
+        for (let i = 0, l = keys.length; i < l; i++) {
+            const key = keys[i];
+            const value = data[key];
             stored[key] = encode(value, list, seen);
         }
     } else if (proto === '[object Array]') {
-        stored = [];
+        const stored = [];
         seen.set(data, index);
         list.push(stored);
-        for (i = 0, l = data.length; i < l; i++) {
-            value = data[i];
+        for (let i = 0, l = data.length; i < l; i++) {
+            const value = data[i];
             stored[i] = encode(value, list, seen);
         }
     } else {
@@ -176,20 +179,19 @@ function encode(data, list, seen) {
 
 function decode(list) {
     let i = list.length;
-    let j, k, data, key, value, proto;
     while (i--) {
-        data = list[i];
-        proto = Object.prototype.toString.call(data);
+        const data = list[i];
+        const proto = Object.prototype.toString.call(data);
         if (proto === '[object Object]') {
-            let keys = Object.keys(data);
-            for (j = 0, k = keys.length; j < k; j++) {
-                key = keys[j];
-                value = list[data[key]];
+            const keys = Object.keys(data);
+            for (let j = 0, k = keys.length; j < k; j++) {
+                const key = keys[j];
+                const value = list[data[key]];
                 data[key] = value
             }
         } else if (proto === '[object Array]') {
-            for (j = 0, k = data.length; j < k; j++) {
-                value = list[data[j]];
+            for (let j = 0, k = data.length; j < k; j++) {
+                const value = list[data[j]];
                 data[j] = value
             }
         }
@@ -200,18 +202,18 @@ function stringifyCircular(data, space?) {
     try {
         return arguments.length === 1 ? JSON.stringify(data) : JSON.stringify(data, space);
     } catch (e) {
-        let list = [];
+        const list = [];
         encode(data, list, new Map());
         return space ? ' ' + JSON.stringify(list, null, space) : ' ' + JSON.stringify(list);
     }
 }
 
 function parseCircular(data: string): any {
-    let hasCircular = /^\s/.test(data);
+    const hasCircular = /^\s/.test(data);
     if (!hasCircular) {
         return JSON.parse(data);
     } else {
-        let list = JSON.parse(data);
+        const list = JSON.parse(data);
         decode(list);
         return list[0]
     }
